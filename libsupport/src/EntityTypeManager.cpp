@@ -104,6 +104,7 @@ katana::EntityTypeManager::DoAssignEntityTypeIDsFromProperties(
 katana::Result<katana::EntityTypeID>
 katana::EntityTypeManager::AddNonAtomicEntityType(
     const katana::SetOfEntityTypeIDs& type_id_set) {
+  KATANA_LOG_ASSERT(IsValid());
   // Add the element since it doesn't exist.
   EntityTypeID new_entity_type_id = GetNumEntityTypes();
   if (new_entity_type_id >= kInvalidEntityType) {
@@ -137,6 +138,7 @@ katana::EntityTypeManager::AddNonAtomicEntityType(
 katana::Result<katana::EntityTypeID>
 katana::EntityTypeManager::GetOrAddNonAtomicEntityType(
     const katana::SetOfEntityTypeIDs& type_id_set) {
+  KATANA_LOG_ASSERT(IsValid());
   // Find a previous type ID for this set of types. This is a linear search
   // and O(n types). However, n types is expected to stay small so this isn't
   // a big issue. If this does turn out to be a performance problem we could
@@ -157,6 +159,7 @@ katana::EntityTypeManager::GetOrAddNonAtomicEntityType(
 katana::Result<katana::EntityTypeID>
 katana::EntityTypeManager::GetNonAtomicEntityType(
     const katana::SetOfEntityTypeIDs& type_id_set) const {
+  KATANA_LOG_ASSERT(IsValid());
   // Find a previous type ID for this set of types. This is a linear search
   // and O(n types). However, n types is expected to stay small so this isn't
   // a big issue. If this does turn out to be a performance problem we could
@@ -178,6 +181,7 @@ katana::EntityTypeManager::GetNonAtomicEntityType(
 
 katana::Result<katana::EntityTypeID>
 katana::EntityTypeManager::AddAtomicEntityType(const std::string& name) {
+  KATANA_LOG_ASSERT(IsValid());
   // This is a hash lookup, so this should be fast enough for production code.
   if (HasAtomicType(name)) {
     return KATANA_ERROR(
@@ -205,6 +209,7 @@ katana::EntityTypeManager::AddAtomicEntityType(const std::string& name) {
 std::string
 katana::EntityTypeManager::ReportDiff(
     const katana::EntityTypeManager& other) const {
+  KATANA_LOG_ASSERT(valid_ && other.valid_);
   fmt::memory_buffer buf;
   if (entity_type_id_to_atomic_entity_type_ids_ !=
       other.entity_type_id_to_atomic_entity_type_ids_) {
@@ -265,6 +270,7 @@ katana::EntityTypeManager::ReportDiff(
 bool
 katana::EntityTypeManager::Equals(
     const katana::EntityTypeManager& other) const {
+  KATANA_LOG_ASSERT(valid_ && other.valid_);
   if (entity_type_id_to_atomic_entity_type_ids_ !=
       other.entity_type_id_to_atomic_entity_type_ids_) {
     return false;
@@ -288,6 +294,7 @@ katana::EntityTypeManager::Equals(
 
 katana::Result<katana::EntityTypeID>
 katana::EntityTypeManager::GetOrAddEntityTypeID(const std::string& name) {
+  KATANA_LOG_ASSERT(IsValid());
   if (HasAtomicType(name)) {
     return GetEntityTypeID(name);
   } else {
@@ -298,6 +305,7 @@ katana::EntityTypeManager::GetOrAddEntityTypeID(const std::string& name) {
 katana::Result<katana::TypeNameSet>
 katana::EntityTypeManager::EntityTypeToTypeNameSet(
     katana::EntityTypeID type_id) const {
+  KATANA_LOG_ASSERT(IsValid());
   katana::TypeNameSet type_name_set;
   if (type_id == katana::kInvalidEntityType || type_id >= GetNumEntityTypes()) {
     return KATANA_ERROR(

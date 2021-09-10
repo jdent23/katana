@@ -69,7 +69,8 @@ public:
       : atomic_entity_type_id_to_type_name_(
             std::move(atomic_entity_type_id_to_type_name)),
         entity_type_id_to_atomic_entity_type_ids_(
-            std::move(entity_type_id_to_atomic_entity_type_ids)) {
+            std::move(entity_type_id_to_atomic_entity_type_ids)),
+        valid_(true) {
     for (auto& type_id_name_pair : atomic_entity_type_id_to_type_name_) {
       atomic_type_name_to_entity_type_id_.emplace(
           type_id_name_pair.second, type_id_name_pair.first);
@@ -100,7 +101,8 @@ public:
         entity_type_id_to_atomic_entity_type_ids_(
             std::move(entity_type_id_to_atomic_entity_type_ids)),
         atomic_entity_type_id_to_entity_type_ids_(
-            std::move(atomic_entity_type_id_to_entity_type_ids)) {}
+            std::move(atomic_entity_type_id_to_entity_type_ids)),
+        valid_(true) {}
 
   /// This function can be used to convert "old style" graphs (storage format 1,
   /// where types are represented by uint8 properties) and "new style"
@@ -191,6 +193,7 @@ public:
   template <typename Container>
   Result<EntityTypeID> GetOrAddNonAtomicEntityTypeFromStrings(
       const Container& names) {
+    KATANA_LOG_ASSERT(IsValid());
     // We cannot use KATANA_CHECKED here because nvcc cannot handle it.
     auto res = GetOrAddEntityTypeIDs(names);
     if (!res) {
@@ -205,6 +208,7 @@ public:
   template <typename Container>
   Result<EntityTypeID> GetNonAtomicEntityTypeFromStrings(
       const Container& names) const {
+    KATANA_LOG_ASSERT(IsValid());
     // We cannot use KATANA_CHECKED here because nvcc cannot handle it.
     auto res = GetEntityTypeIDs(names);
     if (!res) {
@@ -250,20 +254,24 @@ public:
 
   /// \returns the number of atomic types
   size_t GetNumAtomicTypes() const {
+    KATANA_LOG_ASSERT(IsValid());
     return atomic_entity_type_id_to_type_name_.size();
   }
 
   /// \returns the number of entity types (including kUnknownEntityType)
   size_t GetNumEntityTypes() const {
+    KATANA_LOG_ASSERT(IsValid());
     return entity_type_id_to_atomic_entity_type_ids_.size();
   }
 
   /// \returns true iff an atomic type \p name exists
   bool HasAtomicType(const std::string& name) const {
+    KATANA_LOG_ASSERT(IsValid());
     return atomic_type_name_to_entity_type_id_.count(name) == 1;
   }
 
   std::vector<std::string> ListAtomicTypes() const {
+    KATANA_LOG_ASSERT(IsValid());
     std::vector<std::string> types;
     // TODO(aneesh) define an iterator-type alias and return an iterator over
     // the names instead of constructing a vector.
@@ -276,12 +284,14 @@ public:
   /// \returns true iff an entity type \p entity_type_id exists
   /// (returns true for kUnknownEntityType)
   bool HasEntityType(EntityTypeID entity_type_id) const {
+    KATANA_LOG_ASSERT(IsValid());
     return entity_type_id < entity_type_id_to_atomic_entity_type_ids_.size();
   }
 
   /// \returns the EntityTypeID for an atomic type with name \p name
   /// (assumes that the type exists)
   EntityTypeID GetEntityTypeID(const std::string& name) const {
+    KATANA_LOG_ASSERT(IsValid());
     return atomic_type_name_to_entity_type_id_.at(name);
   }
 
@@ -299,6 +309,7 @@ public:
   /// any does not exist.
   template <typename Container>
   Result<SetOfEntityTypeIDs> GetEntityTypeIDs(const Container& names) const {
+    KATANA_LOG_ASSERT(IsValid());
     SetOfEntityTypeIDs res;
     for (const auto& name : names) {
       if (HasAtomicType(name)) {
@@ -323,6 +334,7 @@ public:
   /// needed.
   template <typename Container>
   Result<SetOfEntityTypeIDs> GetOrAddEntityTypeIDs(const Container& names) {
+    KATANA_LOG_ASSERT(IsValid());
     SetOfEntityTypeIDs res;
     for (const auto& name : names) {
       auto id_res = GetOrAddEntityTypeID(name);
@@ -344,6 +356,7 @@ public:
   /// \p entity_type_id is an atomic type, nullopt otherwise
   std::optional<std::string> GetAtomicTypeName(
       EntityTypeID entity_type_id) const {
+    KATANA_LOG_ASSERT(IsValid());
     auto found = atomic_entity_type_id_to_type_name_.find(entity_type_id);
     if (found != atomic_entity_type_id_to_type_name_.cend()) {
       return found->second;
@@ -355,6 +368,7 @@ public:
   /// the atomic type \p entity_type_id
   /// (assumes that the atomic type exists)
   const SetOfEntityTypeIDs& GetSupertypes(EntityTypeID entity_type_id) const {
+    KATANA_LOG_ASSERT(IsValid());
     return atomic_entity_type_id_to_entity_type_ids_.at(entity_type_id);
   }
 
@@ -363,6 +377,7 @@ public:
   /// (assumes that the entity type exists)
   const SetOfEntityTypeIDs& GetAtomicSubtypes(
       EntityTypeID entity_type_id) const {
+    KATANA_LOG_ASSERT(IsValid());
     return entity_type_id_to_atomic_entity_type_ids_.at(entity_type_id);
   }
 
@@ -370,6 +385,7 @@ public:
   /// sub-type of the type \p super_type
   /// (assumes that the sub_type and super_type EntityTypeIDs exists)
   bool IsSubtypeOf(EntityTypeID sub_type, EntityTypeID super_type) const {
+    KATANA_LOG_ASSERT(IsValid());
     const auto& super_atomic_types = GetAtomicSubtypes(super_type);
     const auto& sub_atomic_types = GetAtomicSubtypes(sub_type);
     // return true if sub_atomic_types is a subset of super_atomic_types
@@ -378,11 +394,13 @@ public:
 
   const EntityTypeIDToSetOfEntityTypeIDsMap&
   GetEntityTypeIDToAtomicEntityTypeIDs() const {
+    KATANA_LOG_ASSERT(IsValid());
     return entity_type_id_to_atomic_entity_type_ids_;
   }
 
   const EntityTypeIDToAtomicTypeNameMap& GetEntityTypeIDToAtomicTypeNameMap()
       const {
+    KATANA_LOG_ASSERT(IsValid());
     return atomic_entity_type_id_to_type_name_;
   }
 
@@ -393,6 +411,9 @@ public:
   std::string ReportDiff(const EntityTypeManager& other) const;
 
 private:
+  // This map is always initialized with at least kUnknownEntityType
+  bool IsValid() const { return valid_; }
+
   // Used by AssignEntityTypeIDsFromProperties()
   template <typename ArrowType>
   struct PropertyColumn {
@@ -415,6 +436,7 @@ private:
       EntityTypeManager* entity_type_manager);
 
   void Init() {
+    valid_ = true;
     // assume kUnknownEntityType is 0
     static_assert(kUnknownEntityType == 0);
     static_assert(kUnknownEntityTypeName == std::string_view("UnknownName"));
@@ -445,6 +467,9 @@ private:
   /// ex: atomic_entity_type_id_to_entity_type_ids_[atomic_id][atomic_id] == 1
   /// but atomic_entity_type_id_to_entity_type_ids_[non_atomic_id][non_atomic_id] == 0
   EntityTypeIDToSetOfEntityTypeIDsMap atomic_entity_type_id_to_entity_type_ids_;
+
+  // We move managers, so we track validity.
+  bool valid_{false};
 };
 
 }  // namespace katana
