@@ -576,10 +576,7 @@ def tag_stable_subcommand(args):
     check_remotes(config)
     check_clean(args, config)
 
-    version = get_version(
-        config,
-        commit=ke_commit
-    )
+    version = get_version(config, commit=ke_commit)
     tag = f"stable-{version}"
 
     git.tag_commit(tag, ke_commit, config.enterprise)
