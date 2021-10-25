@@ -50,11 +50,13 @@ RUN set -eu ; . /activate_miniconda.sh; set -x ; \
 
 FROM pre_install AS test_tools
 ARG CONDA_CLEAN="conda clean --quiet --yes --all"
-ARG MAMBA_INSTALL="mamba install --quiet --yes --channel katanagraph --channel /packages"
+ARG MAMBA_INSTALL="mamba install --quiet --yes --channel /packages"
 ARG TOOLS_PACKAGE="katana-tools"
 ARG TOOLS_TEST_COMMAND="graph-convert --version"
 
 RUN set -eu ; . /activate_miniconda.sh; set -x ; \
+    conda config --add channels defaults; \
+    conda config --add channels katanagraph; \
     ${MAMBA_INSTALL} ${TOOLS_PACKAGE}; \
     ${CONDA_CLEAN}
 
