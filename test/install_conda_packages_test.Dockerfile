@@ -38,7 +38,7 @@ COPY packages /packages
 
 FROM pre_install AS test_python
 ARG CONDA_CLEAN="conda clean --quiet --yes --all"
-ARG MAMBA_INSTALL="mamba install --quiet --yes --channel katanagraph --channel /packages"
+ARG MAMBA_INSTALL="mamba install --quiet --yes --channel defaults --channel katanagraph --channel /packages"
 ARG PYTHON_PACKAGE="katana-python"
 
 RUN set -eu ; . /activate_miniconda.sh; set -x ; \
